@@ -1,0 +1,319 @@
+openapi: 3.1.0
+info:
+  title: Workfloows API
+  version: "1"
+  description: |
+    ## Introduction
+
+    This API provides a growing collection of powerful tools and endpoints 
+    commonly used in automation workflows. It's designed for individual automators, 
+    agencies, and app builders who want to streamline processes and connect systems.
+
+    ## Authentication
+
+    All requests require an API key, which must be included in the `x-api-key` header.
+
+    ```
+    x-api-key: <your_api_key>
+    ```
+
+    If the API key is missing or invalid, a `401 Unauthorized` response will be returned.
+
+servers:
+  - url: https://workfloows.ngrok.io/api/v1
+    description: Development server
+  - url: https://api.workfloows.com/api/v1
+    description: Production server
+
+paths:
+  /ping:
+    get:
+      summary: Ping
+      description: |
+        A simple health check endpoint. Returns `"pong"` if the user is authenticated via API key.
+
+        Useful for verifying connectivity and authentication status.
+
+        **This endpoint does not affect credits, but rate limits apply.**
+      operationId: ping
+      security:
+        - apiKeyAuth: []
+      tags:
+        - Health
+      responses:
+        "200":
+          description: Response
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - message
+                properties:
+                  message:
+                    type: string
+                    description: Response message
+                    example: pong
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /scrape/web:
+    post:
+      summary: Web scrape API
+      description: |
+        Scrapes textual content from a given public website URL.
+
+        Allows optional proxying and multiple output formats: HTML, Markdown, or link extraction.
+
+        **Requires a valid API key.**
+
+        ### Non-proxy scrape
+
+        When proxying is **not enabled,** scraping is performed using standard data center IPs. Some websites may block such traffic.
+
+        If proxy is **disabled,** the `response` includes:
+
+        ```json
+        "response": {
+          "success": true,
+          "proxyUsed": false
+        }
+        ```
+
+        ### Proxy scrape
+
+        When proxying is **enabled,** the scraper follows these steps:
+        1. Attempts a regular (non-proxy) scrape.
+        2. If access is blocked, it retries using a proxy.
+        3. If a CAPTCHA is detected, it attempts to solve it.
+        4. The final result is returned to the client.
+
+        If proxy is **enabled,** the `response` includes additional diagnostic information:
+
+        ```json
+        "response": {
+          "success": true,
+          "proxyUsed": true,
+          "botDetected": true,
+          "captchaDetected": true,
+          "captchaSolved": true
+        }
+        ```
+
+      operationId: scrapeWeb
+      security:
+        - apiKeyAuth: []
+      tags:
+        - Scrape
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - url
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  description: Target URL to scrape (including protocol)
+                  example: https://workfloows.com
+                proxy:
+                  type: object
+                  description: Proxy settings
+                  properties:
+                    enabled:
+                      type: boolean
+                      default: false
+                      description: Whether to enable proxy
+                output:
+                  type: object
+                  description: Output formatting options
+                  properties:
+                    html:
+                      type: boolean
+                      default: false
+                      description: Return raw HTML
+                    markdown:
+                      type: boolean
+                      default: false
+                      description: Return Markdown format
+                    links:
+                      type: boolean
+                      default: false
+                      description: Include extracted links
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response:
+                    type: object
+                    properties:
+                      success:
+                        type: boolean
+                        description: Whether the scraping was successful
+                      proxyUsed:
+                        type: boolean
+                        description: Whether a proxy was used for scraping
+                      botDetected:
+                        type: boolean
+                        description: Whether bot detection was triggered
+                      captchaDetected:
+                        type: boolean
+                        description: Whether a CAPTCHA was detected
+                      captchaSolved:
+                        type: boolean
+                        description: Whether a detected CAPTCHA was solved
+                  results:
+                    type: object
+                    properties:
+                      text:
+                        type: string
+                        description: The scraped content
+                      html:
+                        type: string
+                        description: The raw HTML content
+                      markdown:
+                        type: string
+                        description: The Markdown content
+                      links:
+                        type: array
+                        description: The extracted links
+                        items:
+                          type: string
+                          description: A link from the scraped page
+              examples:
+                basicSuccess:
+                  summary: Success (no proxy used)
+                  value:
+                    response:
+                      success: true
+                      proxyUsed: false
+                    results:
+                      text: "Page content..."
+                proxySuccess:
+                  summary: Success (proxy used and CAPTCHA solved)
+                  value:
+                    response:
+                      success: true
+                      proxyUsed: true
+                      botDetected: true
+                      captchaDetected: true
+                      captchaSolved: true
+                    results:
+                      text: "Content of page behind the CAPTCHA..."
+
+        "400":
+          description: Scraping error due to CAPTCHA or other failure
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Error message describing why the scraping failed
+              examples:
+                captchaFailed:
+                  summary: Failed CAPTCHA solve
+                  value:
+                    error: "Detected CAPTCHA could not be solved. Scraping failed. Credits refunded."
+                scrapeFailed:
+                  summary: Scrape failed for other reasons
+                  value:
+                    error: "Scraping failed. Credits refunded."
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  securitySchemes:
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+
+  responses:
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+          examples:
+            unauthorized:
+              summary: Unauthorized
+              value:
+                error: Unauthorized.
+            apiKeyRequired:
+              summary: API Key required
+              value:
+                error: Unauthorized. API key is required.
+
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+          examples:
+            invalidApiKey:
+              summary: Invalid API key
+              value:
+                error: Invalid API key.
+            apiKeyNotFound:
+              summary: API Key not found
+              value:
+                error: API Key not found.
+            rateLimitExceeded:
+              summary: Rate limit exceeded
+              value:
+                error: Rate limit exceeded.
+
+    NotFound:
+      description: Not Found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+          examples:
+            userNotFound:
+              summary: User not found
+              value:
+                error: User not found.
+
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: An error occurred while processing your request.
