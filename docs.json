@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "maple",
-  "name": "Mint Starter Kit",
+  "name": "Workfloows Platform",
   "colors": {
     "primary": "#000000",
     "light": "#FFFFFF",
@@ -14,7 +14,8 @@
         "tab": "Guides",
         "groups": [
           {
-            "group": "Get Started",
+            "group": "Get started",
+            "icon": "rocket",
             "pages": [
               "index",
               "quickstart",
@@ -22,14 +23,24 @@
             ]
           },
           {
-            "group": "Essentials",
+            "group": "Guides",
+            "icon": "book-open",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/settings",
-              "essentials/navigation",
-              "essentials/reusable-snippets"
+              "guides/scrape-content"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "icon": "bolt",
+            "pages": [
+              "integrations/n8n"
+            ]
+          },
+          {
+            "group": "Platform",
+            "icon": "grid-2",
+            "pages": [
+              "platform/pricing"
             ]
           }
         ]
@@ -56,19 +67,24 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Documentation",
+          "anchor": "Guides",
           "href": "https://mintlify.com/docs",
           "icon": "book-open-cover"
         },
         {
-          "anchor": "Community",
-          "href": "https://mintlify.com/community",
-          "icon": "slack"
+          "anchor": "API Reference",
+          "href": "https://mintlify.com/docs/api-reference",
+          "icon": "code"
         },
         {
-          "anchor": "Blog",
+          "anchor": "Changelog",
           "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
+          "icon": "list-check"
+        },
+        {
+          "anchor": "Discord",
+          "href": "https://mintlify.com/community",
+          "icon": "discord"
         }
       ]
     }
